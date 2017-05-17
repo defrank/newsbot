@@ -14,8 +14,7 @@ Code for article [How to Build a Simple Slack Bot](http://pybit.es/simple-chatbo
 
     ```sh
     docker-compose up -d
-    docker exec -it newsbot_slackbot /bin/sh
-    python3 get_botid.py
+    docker-compose exec slackbot python3 get_botid.py
     ```
 
 1. Once you have finished **secrets.env**, then you're good to go.
