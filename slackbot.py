@@ -20,10 +20,7 @@ def handle_command(cmd, channel):
     cmd, args = cmd[0], cmd[1:]
 
     if cmd in COMMANDS:
-        if args:
-            response = COMMANDS[cmd](*args)
-        else:
-            response = COMMANDS[cmd]()
+        response = COMMANDS[cmd](*args)
     else:
         response = ('Not sure what you mean? '
 		    'I can help you with these commands:\n'
