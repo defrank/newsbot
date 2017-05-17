@@ -5,9 +5,9 @@ import sys
 from slackclient import SlackClient
 
 
-BOT_NAME = 'newsbot'
+BOT_NAME = os.environ.get('BOT_NAME', 'newsbot')
 
-slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
+slack_client = SlackClient(os.environ.get('BOT_TOKEN'))
 
 
 if __name__ == "__main__":
