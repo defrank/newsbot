@@ -26,19 +26,19 @@ cmd_functions = (get_mood, celebration, get_num_posts, create_tweet, get_weather
 COMMANDS = dict(zip(cmd_names, cmd_functions))
 
 
-def parse_slack_output(slack_rtm_output):
+def parse_slack_rtm_events(events):
     """
         The Slack Real Time Messaging API is an events firehose.
         this parsing function returns None unless a message is
         directed at the Bot, based on its ID.
     """
-    output_list = slack_rtm_output
-    if output_list and len(output_list) > 0:
-        for output in output_list:
-            if output and 'text' in output and AT_BOT in output['text']:
-                # return text after the @ mention, whitespace removed
-                return output['text'].split(AT_BOT)[1].strip().lower(), \
-                       output['channel']
+    logger.debug(events)
+    for evt in events:
+        text = evt.get('text', '')
+        if AT_BOT in text:
+            # return text of an @mention, whitespace and @mention removed
+            return ' '.join(t.strip().lower() for t in text.split(AT_BOT) if t.strip()), \
+                   evt['channel']
     return None, None
 
 
@@ -59,11 +59,12 @@ def handle_command(cmd, channel):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='bot.log', level=logging.DEBUG)
     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
     if slack_client.rtm_connect():
         logger.info('StarterBot connected and running!')
         while True:
-            command, channel = parse_slack_output(slack_client.rtm_read())
+            command, channel = parse_slack_rtm_events(slack_client.rtm_read())
             if command and channel:
                 handle_command(command, channel)
             sleep(READ_WEBSOCKET_DELAY)
