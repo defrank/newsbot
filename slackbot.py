@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from datetime import datetime, timedelta
 from time import sleep
 
 from slackclient import SlackClient
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 BOT_ID = os.environ.get('BOT_ID')
 AT_BOT = '<@{id}>'.format(id=BOT_ID)
-NEWS_CHANNEL = 'news'
+NEWS_CHANNEL = 'news'  # No prefixing '#'
 
 cmd_names = ['mood', 'celebration', 'num_posts', '100day_tweet', 'weather']
 cmd_functions = [get_mood, celebration, get_num_posts, create_tweet, get_weather]
@@ -27,20 +28,31 @@ COMMANDS = dict(zip(cmd_names, cmd_functions))
 
 class NewsSlackBot(object):
 
-    def __init__(self, read_websocket_delay=1):
-        self.read_websocket_delay = read_websocket_delay
+    def __init__(self, loop_delay=1, news_interval=1):
+        self.loop_delay = loop_delay  # In seconds.
+        self.interval = timedelta(minutes=news_interval)
+        self.last_news_update = datetime.now() - timedelta(minutes=2*news_interval)
 
         # instantiate Slack & Twilio clients
         self.slack_client = SlackClient(BOT_TOKEN)
+
 
     def loop_forever(self):
         if self.slack_client.rtm_connect():
             logger.info('StarterBot connected and running!')
             while True:
+                now = datetime.now()
+
                 command, channel = self.parse_rtm_events(self.slack_client.rtm_read())
                 if command and channel:
+                    # Respond to messages.
                     self.handle_command(command, channel)
-                sleep(self.read_websocket_delay)
+                elif now - self.last_news_update > self.interval:
+                    # Send news updates.
+                    self.last_news_update = now
+                    self.send_news()
+
+                sleep(self.loop_delay)
         else:
             logger.critical('Connection failed. Invalid Slack token or bot ID?')
 
@@ -76,6 +88,14 @@ class NewsSlackBot(object):
         self.slack_client.api_call('chat.postMessage',
                                    channel=channel,
                                    text=response,
+                                   as_user=True)
+
+    def send_news(self):
+        self.slack_client.api_call('chat.postMessage',
+                                   channel='#{channel}'.format(
+                                       channel=NEWS_CHANNEL.lstrip('#'),
+                                   ),
+                                   text='Testing news updates!',
                                    as_user=True)
 
 
