@@ -18,12 +18,12 @@
 1. Clone the repository (or fork and clone).
 1. Copy or move **secrets.env.sample** to **secrets.env**.
 1. [Create a new bot user](https://my.slack.com/services/new/bot)
-1. Store the bot's username in **secrets.env** as `BOT_NAME`
-1. Store the API Token in **secrets.env** as `BOT_TOKEN`
+1. Store the bot's username in **secrets.env** as `SLACK_BOT_NAME`
+1. Store the API Token in **secrets.env** as `SLACK_BOT_TOKEN`
 
 ### Install with Docker
 
-1. Now we need to get the `BOT_ID`:
+1. Now we need to get the `SLACK_BOT_ID`:
 
     ```sh
     docker-compose up -d
@@ -52,7 +52,7 @@
     export $(cut -d= -f1 secrets.env)
     ```
 
-1. Now we need to get the `BOT_ID`:
+1. Now we need to get the `SLACK_BOT_ID`:
 
     ```sh
     python3 get_botid.py
@@ -71,7 +71,7 @@
 1. Logout, login, then verify your environment:
 
     ```sh
-    echo $BOT_NAME $BOT_TOKEN $BOT_ID
+    echo $SLACK_BOT_NAME $SLACK_BOT_TOKEN $SLACK_BOT_ID
     ```
 
 

@@ -15,9 +15,11 @@ from commands.weather import get_weather
 
 logger = logging.getLogger(__name__)
 
+# Slackbot secrets.
+BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
+BOT_ID = os.environ.get('SLACK_BOT_ID')
+
 # Constants.
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
-BOT_ID = os.environ.get('BOT_ID')
 AT_BOT = '<@{id}>'.format(id=BOT_ID)
 NEWS_CHANNEL = 'news'  # No prefixing '#'
 
