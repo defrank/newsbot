@@ -6,6 +6,10 @@ from time import sleep
 
 from slackclient import SlackClient
 
+if __name__ == '__main__':
+    # Setup basic config before importing local since `disable_existing_loggers`
+    # defaults to True.
+    logging.basicConfig(filename='bot.log', level=logging.DEBUG)
 from commands.mood import get_mood
 from commands.special import celebration
 from commands.articles import get_num_posts
@@ -38,7 +42,6 @@ class NewsSlackBot(object):
         # instantiate Slack & Twilio clients
         self.slack_client = SlackClient(BOT_TOKEN)
 
-
     def loop_forever(self):
         if self.slack_client.rtm_connect():
             logger.info('StarterBot connected and running!')
@@ -65,8 +68,8 @@ class NewsSlackBot(object):
         This parsing function returns any for any non-empty message.
 
         """
-        logger.debug(events)
         for evt in events:
+            logger.debug(evt)
             text = evt.get('text')
             if evt.get('user') == BOT_ID or not text:
                 continue
@@ -102,6 +105,5 @@ class NewsSlackBot(object):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='bot.log', level=logging.DEBUG)
     slackbot = NewsSlackBot()
     slackbot.loop_forever()
