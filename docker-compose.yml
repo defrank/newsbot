@@ -1,8 +1,6 @@
 version: "3"
 services:
     slackbot:
-        env_file:
-            - ./secrets.env
         restart: always
         build: .
         tty: true
