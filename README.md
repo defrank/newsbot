@@ -28,6 +28,19 @@
 1. **Note:** `slackbot.id` is optional and will be determined at instantiation
    of NewsSlackBot
 
+### Setup Twitter
+* **Required:** `consumer.key`, `consumer.secret`, `access.token`,
+  `access.token_secret`
+
+1. [Create a new Twitter app](https://apps.twitter.com/)
+1. Look for **Manage the keys and access tokens** near the **Consumer Key (API
+   Keys)** and make sure the Consumer and Access keys are generated.
+1. Store the **Consumer Key** in **secrets.yml** as `twitter.consumer.key`
+1. Store the **Consumer Secret** in **secrets.yml** as `twitter.consumer.sercet`
+1. Store the **Access Token** in **secrets.yml** as `twitter.access.token`
+1. Store the **Access Token Secret** in **secrets.yml** as
+   `twitter.access.token_secret`
+
 ### Install with Docker
 
 1. Once you have finished **secrets.yml**, then we just build the image.

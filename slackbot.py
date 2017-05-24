@@ -16,6 +16,7 @@ from commands.special import celebration
 from commands.articles import get_num_posts
 from commands.challenge import create_tweet
 from commands.weather import get_weather
+from newsclient.twitter import TwitterNews
 
 
 logger = logging.getLogger(__name__)
@@ -109,12 +110,15 @@ class NewsSlackBot(object):
                                    as_user=True)
 
     def send_news(self):
-        self.slack_client.api_call('chat.postMessage',
-                                   channel='#{channel}'.format(
-                                       channel=NEWS_CHANNEL.lstrip('#'),
-                                   ),
-                                   text='Testing news updates!',
-                                   as_user=True)
+        twitter_client = TwitterNews(self.settings['twitter'])
+        articles = twitter_client.fetch()
+        for article in articles:
+            self.slack_client.api_call('chat.postMessage',
+                                       channel='#{channel}'.format(
+                                           channel=NEWS_CHANNEL.lstrip('#'),
+                                       ),
+                                       text=article,
+                                       as_user=True)
 
 
 if __name__ == '__main__':
