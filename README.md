@@ -17,6 +17,11 @@
 
 1. Clone the repository (or fork and clone).
 1. Copy or move **secrets.yml.sample** to **secrets.yml**.
+
+### Setup Slackbot
+* **Required:** `slackbot.name`, `slackbot.token`
+* **Optional:** `slackbot.id`
+
 1. [Create a new bot user](https://my.slack.com/services/new/bot)
 1. Store the bot's username in **secrets.yml** as `slackbot.name`
 1. Store the API Token in **secrets.yml** as `slackbot.token`
