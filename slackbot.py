@@ -34,19 +34,24 @@ class NewsSlackBot(object):
         self.bot_id = self.settings['slackbot'].get('id')
 
         # Instantiate Slack client.
-        self.slack_client = SlackClient(self.bot_token)
+        self.slack_client = sc = SlackClient(self.bot_token)
 
         # Set bot id.
         if not self.bot_id:
             if not self.bot_name:
                 raise EnvironmentError
 
-            users_list = self.slack_client.api_call('users.list')
+            users_list = sc.api_call('users.list')
             if not users_list.get('ok'):
                 raise EnvironmentError
             users = [u for u in users_list.get('members') if 'name' in u]
             self.bot_id = next(u.get('id') for u in users if u['name'] == self.bot_name)
         self.at_bot = '<@{id}>'.format(id=self.bot_id)
+
+        # Channel IDs: used to differentiate between IMs.
+        # TODO: treat this as a cache and update periodically or when receiving
+        # channel events.
+        self.channel_ids =  [c['id'] for c in sc.api_call('channels.list')['channels']]
 
     def loop_forever(self):
         if self.slack_client.rtm_connect():
@@ -75,13 +80,13 @@ class NewsSlackBot(object):
         """
         for evt in events:
             logger.debug(evt)
-            text = evt.get('text')
-            if evt.get('user') == self.bot_id or not text:
+            channel, text = evt.get('channel'), evt.get('text')
+            if evt.get('user') == self.bot_id or not text or evt['type'] != 'message':
                 continue
-            elif evt['type'] == 'message':
+            elif channel not in self.channel_ids or self.at_bot in text:
                 # return text, whitespace and @mention removed
                 tokens = filter(None, (t.strip() for t in text.split(self.at_bot)))
-                return ' '.join(t.lower() for t in tokens), evt['channel']
+                return ' '.join(t.lower() for t in tokens), channel
         return None, None
 
     def handle_command(self, cmd, channel):
