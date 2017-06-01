@@ -17,9 +17,6 @@ from newsclient.twitter import TwitterNews
 
 logger = logging.getLogger(__name__)
 
-# Constants.
-NEWS_CHANNEL = 'news'  # No prefixing '#'
-
 
 class NewsSlackBot(object):
 
@@ -115,16 +112,18 @@ class NewsSlackBot(object):
                                    text=response,
                                    as_user=True)
 
+    def get_newsclients(self):
+        return [TwitterNews(self.settings['twitter'])]
+
     def send_news(self):
-        twitter_client = TwitterNews(self.settings['twitter'])
-        articles = twitter_client.fetch()
-        for article in articles:
-            self.slack_client.api_call('chat.postMessage',
-                                       channel='#{channel}'.format(
-                                           channel=NEWS_CHANNEL.lstrip('#'),
-                                       ),
-                                       text=article,
-                                       as_user=True)
+        for client in self.get_newsclients():
+            for channel in self.channels:
+                for article in client.fetch(topic=channel['topic']['value'] or channel['purpose']['value']):
+                    self.slack_client.api_call('chat.postMessage',
+                                               channel=channel['id'],
+                                               text=article,
+                                               as_user=True)
+                    sleep(1)
 
 
 if __name__ == '__main__':
