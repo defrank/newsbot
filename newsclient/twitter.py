@@ -25,8 +25,8 @@ class TwitterNews(BaseNewsClient):
         except tweepy.TweepError:
             raise self.APIError
 
-    def fetch(self, topic=None):
-        articles = [self.NewsArticle(r.text) for r in self.api.search('news')]
+    def fetch(self, topic='general news'):
+        articles = [self.NewsArticle(r.text) for r in self.api.search(topic)]
         for art in articles:
             logger.debug(art)
         return articles[:1]
