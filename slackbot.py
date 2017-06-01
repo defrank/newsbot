@@ -3,6 +3,7 @@ import os
 import sys
 import yaml
 from datetime import datetime, timedelta
+from operator import itemgetter
 from time import sleep
 
 from slackclient import SlackClient
@@ -51,7 +52,7 @@ class NewsSlackBot(object):
         # Channel IDs: used to differentiate between IMs.
         # TODO: treat this as a cache and update periodically or when receiving
         # channel events.
-        self.channel_ids =  [c['id'] for c in sc.api_call('channels.list')['channels']]
+        self.channels = [c for c in sc.api_call('channels.list')['channels'] if c['is_member']]
 
     def loop_forever(self):
         if self.slack_client.rtm_connect():
@@ -83,9 +84,11 @@ class NewsSlackBot(object):
             channel, text = evt.get('channel'), evt.get('text')
             if evt.get('user') == self.bot_id or not text or evt['type'] != 'message':
                 continue
-            elif channel not in self.channel_ids or self.at_bot in text:
-                # return text, whitespace and @mention removed
+            elif self.at_bot in text \
+                    or channel not in map(itemgetter('id'), self.channels):
+                # Handle command only if @mention or direct channel (IM).
                 tokens = filter(None, (t.strip() for t in text.split(self.at_bot)))
+                # return text, whitespace and @mention removed
                 return ' '.join(t.lower() for t in tokens), channel
         return None, None
 
