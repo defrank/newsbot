@@ -39,12 +39,12 @@ on-demand.
 
 ## News Clients
 All clients must provide the following interface:
-* Implement `fetch` method that accepts a topic and returns a list of
-  NewsArticles.
+* Implement `_fetch` method that accepts a topic and limit, then returns
+  an iterable of strings (preferably a generator despite below example).
 
     ```python
-    def fetch(self, topic=None):
-        return [self.NewsArticle(a) for a in 'Article 1', 'Article 2']
+    def _fetch(self, topic, limit):
+        return ['Article 1', 'Article 2']
     ```
 
 * News topic must be certain that either the API searches related

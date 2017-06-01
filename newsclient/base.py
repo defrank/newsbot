@@ -1,3 +1,6 @@
+from itertools import islice
+
+
 class BaseNewsClient(object):
     class APIError(EnvironmentError):
         pass
@@ -20,19 +23,41 @@ class BaseNewsClient(object):
     def __init__(self):
         """Use the constructor to take secrets and initialize an API."""
 
-    def fetch(self, topic=None):
+    def fetch(self, topic='general news', limit=1):
+        """
+        Uses the overridden method `_fetch` to retrieve an iterable of
+        text news articles.  Each text is wrapped in a NewsArticle.
+        Limit is enforced.
+
+        The overridden method, `_fetch` should return a generator, but
+        any iterable is acceptable.
+
+        Arguments:
+            topic -- str of news topic
+            limit -- int of max news articles
+
+        Returns:
+            list -- of str-like NewsArticle objects
+
+        """
+        return [
+            self.NewsArticle(a)
+            for a in islice(self._fetch(topic=topic, limit=limit), limit)
+        ]
+
+    def _fetch(self, topic, limit):
         """
         Use the client's API to get news of the given topic.  General
         news will be retrieved if the topic is not given.
 
-        The format that is returned needs to be a list of nicely
-        formatted articles.
+        The format that is returned needs to be interable.
 
         Arguments:
-            topic -- optional, str of news topic
+            topic -- str of news topic
+            limit -- int of max article count returned
 
         Returns: 
-            list -- pretty formatted str articles
+            iterable -- of str, preferably a generator
 
         """
         raise NotImplementedError

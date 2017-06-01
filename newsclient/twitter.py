@@ -1,5 +1,6 @@
 import logging
 import os
+from operator import attrgetter
 
 import tweepy
 
@@ -25,8 +26,7 @@ class TwitterNews(BaseNewsClient):
         except tweepy.TweepError:
             raise self.APIError
 
-    def fetch(self, topic='general news'):
-        articles = [self.NewsArticle(r.text) for r in self.api.search(topic)]
-        for art in articles:
-            logger.debug(art)
-        return articles[:1]
+    def _fetch(self, topic, limit):
+        for text in map(attrgetter('text'), self.api.search(topic)):
+            logger.debug(text)
+            yield text
