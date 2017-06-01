@@ -42,17 +42,29 @@ class NewsSlackBot(object):
             if not self.bot_name:
                 raise EnvironmentError
 
-            users_list = sc.api_call('users.list')
+            users_list = self.get('users.list')
             if not users_list.get('ok'):
                 raise EnvironmentError
             users = [u for u in users_list.get('members') if 'name' in u]
             self.bot_id = next(u.get('id') for u in users if u['name'] == self.bot_name)
         self.at_bot = '<@{id}>'.format(id=self.bot_id)
 
-        # Channel IDs: used to differentiate between IMs.
-        # TODO: treat this as a cache and update periodically or when receiving
-        # channel events.
-        self.channels = [c for c in sc.api_call('channels.list')['channels'] if c['is_member']]
+    def get(self, name, key=None):
+        result = self.slack_client.api_call(name)
+        return result if key is None else result[key]
+
+    @property
+    def channels(self):
+        last_update, channels = getattr(self, '_channels', (None, None))
+
+        now = datetime.now()
+        if last_update is None or now - last_update > timedelta(minutes=10):
+            last_update = now
+            self._channels = last_update, channels = now, [
+                    c
+                    for c in self.get('channels.list', 'channels') if c['is_member']]
+
+        return channels
 
     def loop_forever(self):
         if self.slack_client.rtm_connect():
