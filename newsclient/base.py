@@ -1,7 +1,8 @@
+from abc import ABCMeta, abstractmethod
 from itertools import islice
 
 
-class BaseNewsClient(object):
+class BaseNewsClient(object, metaclass=ABCMeta):
     class APIError(EnvironmentError):
         pass
 
@@ -45,6 +46,7 @@ class BaseNewsClient(object):
             for a in islice(self._fetch(topic=topic, limit=limit), limit)
         ]
 
+    @abstractmethod
     def _fetch(self, topic, limit):
         """
         Use the client's API to get news of the given topic.  General
