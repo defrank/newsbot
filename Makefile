@@ -8,3 +8,9 @@ clean:
 
 lint:
 	pylint simple slackbot.py
+
+stop:
+	docker-compose stop
+
+restart: stop clean
+	docker-compose restart
