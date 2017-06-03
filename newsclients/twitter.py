@@ -9,10 +9,11 @@ from .base import BaseNewsClient
 LOGGER = logging.getLogger(__name__)
 
 
-class TwitterNews(BaseNewsClient):
+class NewsClient(BaseNewsClient):
 
     def __init__(self, config):
-        super(TwitterNews, self).__init__(config)
+        config = config['twitter']
+        super(NewsClient, self).__init__(config)
 
         auth = tweepy.OAuthHandler(config['consumer']['key'],
                                    config['consumer']['secret'])

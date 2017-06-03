@@ -1,16 +1,12 @@
 import logging
 from datetime import datetime, timedelta
+from glob import glob
+from importlib import import_module
 from operator import itemgetter
 from time import sleep
 
 import yaml
 from slackclient import SlackClient
-
-if __name__ == '__main__':
-    # Setup basic config before importing local since `disable_existing_loggers`
-    # defaults to True.
-    logging.basicConfig(filename='bot.log', level=logging.DEBUG)
-from newsclient.twitter import TwitterNews
 
 
 LOGGER = logging.getLogger(__name__)
@@ -109,11 +105,15 @@ class NewsSlackBot(object):
                                    text=response,
                                    as_user=True)
 
-    def get_newsclients(self):
-        return [TwitterNews(self.config['twitter'])]
+    @property
+    def newsclients(self):
+        for path in glob('newsclients/[!_]*.py'):
+            module = import_module(path.rstrip('.py').replace('/', '.'))
+            if hasattr(module, 'NewsClient'):
+                yield module.NewsClient(self.config)
 
     def send_news(self):
-        for client in self.get_newsclients():
+        for client in self.newsclients:
             for channel in self.channels:
                 for article in client.fetch(topic=channel['topic']['value']
                                             or channel['purpose']['value']):
@@ -125,4 +125,5 @@ class NewsSlackBot(object):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='bot.log', level=logging.DEBUG)
     NewsSlackBot().loop_forever()
