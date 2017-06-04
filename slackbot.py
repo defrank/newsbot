@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime, timedelta
-from glob import glob
 from importlib import import_module
 from operator import itemgetter
+from pkgutil import iter_modules
 from time import sleep
 
 import yaml
@@ -105,15 +105,22 @@ class NewsSlackBot(object):
                                    text=response,
                                    as_user=True)
 
-    @property
-    def newsclients(self):
-        for path in glob('newsclients/[!_]*.py'):
-            module = import_module(path.rstrip('.py').replace('/', '.'))
-            if hasattr(module, 'NewsClient'):
-                yield module.NewsClient(self.config)
+    @staticmethod
+    def get_client_classes(pkg='newsclients'):
+        """
+        Yield all of the NewsClients existing in non-private modules of the
+        given package.
+
+        """
+        for _, name, is_pkg in iter_modules([pkg]):
+            if not is_pkg and not name.startswith('_'):
+                module = import_module('{pkg}.{client}'.format(pkg=pkg, client=name))
+                if hasattr(module, 'NewsClient'):
+                    yield module.NewsClient
 
     def send_news(self):
-        for client in self.newsclients:
+        for client_cls in self.get_client_classes():
+            client = client_cls(self.config)
             for channel in self.channels:
                 for article in client.fetch(topic=channel['topic']['value']
                                             or channel['purpose']['value']):
