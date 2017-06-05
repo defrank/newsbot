@@ -25,7 +25,7 @@ class BaseNewsClient(object, metaclass=ABCMeta):
         """Use the constructor to take secrets and initialize an API."""
         self.config = config
 
-    def fetch(self, topic=None, limit=1):
+    def fetch(self, topic=None, limit=1, lang='en'):
         """
         Uses the overridden method `_fetch` to retrieve an iterable of
         text news articles.  Each text is wrapped in a NewsArticle.
@@ -37,6 +37,7 @@ class BaseNewsClient(object, metaclass=ABCMeta):
         Arguments:
             topic -- str of news topic
             limit -- int of max news articles
+            lang -- str of ISO-639-1 formatted language
 
         Returns:
             list -- of str-like NewsArticle objects
@@ -46,11 +47,12 @@ class BaseNewsClient(object, metaclass=ABCMeta):
             topic = 'general news'
         return [
             self.NewsArticle(a)
-            for a in islice(self._fetch(topic=topic, limit=limit), limit)
+            for a in islice(self._fetch(topic=topic, limit=limit, lang=lang),
+                            limit)
         ]
 
     @abstractmethod
-    def _fetch(self, topic, limit):
+    def _fetch(self, topic, limit, lang):
         """
         Use the client's API to get news of the given topic.  General
         news will be retrieved if the topic is not given.
@@ -60,6 +62,7 @@ class BaseNewsClient(object, metaclass=ABCMeta):
         Arguments:
             topic -- str of news topic
             limit -- int of max article count returned
+            lang -- str of ISO-639-1 formatted language
 
         Returns: 
             iterable -- of str, preferably a generator

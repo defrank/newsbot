@@ -1,4 +1,6 @@
 import logging
+import re
+from collections import defaultdict
 from datetime import datetime, timedelta
 from importlib import import_module
 from operator import itemgetter
@@ -38,11 +40,49 @@ class NewsSlackBot(object):
             bot['id'] = next(u.get('id') for u in users if u['name'] == bot['name'])
         bot['at'] = '<@{id}>'.format(id=bot['id'])
 
+        self.meta_by_channel_id = defaultdict(lambda: defaultdict(lambda: None))
         self._channels = None, None
 
     def get(self, name, key=None):
         result = self.slack_client.api_call(name)
         return result if key is None else result[key]
+
+    @staticmethod
+    def update_purpose(meta, purpose):
+        for line in purpose.splitlines():
+            try:
+                key, value = (t.strip() for t in line.split(':', 1))
+            except ValueError:
+                continue
+            key = key.lower()
+
+            if key == 'topic':
+                meta[key].append(value)
+            elif key == 'frequency':
+                if value.isdigit():
+                    meta[key] = int(value)
+            elif key == 'limit':
+                if value.isdigit():
+                    meta[key] = int(value)
+            elif key == 'language':
+                if len(value) == 2 and value.isalpha():
+                    meta[key] = value
+
+    def parse_meta(self, channel):
+        meta = self.meta_by_channel_id[channel['id']]
+        meta.update(
+            topic=[],
+            frequency=60,
+            limit=2,
+            language='en',
+        )
+
+        topic = channel['topic']['value']
+        if topic:
+            meta['topic'].append(topic)
+        self.update_purpose(meta, channel['purpose']['value'])
+
+        return channel
 
     @property
     def channels(self):
@@ -50,10 +90,10 @@ class NewsSlackBot(object):
 
         now = datetime.now()
         if last_update is None or now - last_update > timedelta(minutes=10):
-            last_update = now
-            self._channels = last_update, channels = now, [
-                c
-                for c in self.get('channels.list', 'channels') if c['is_member']]
+            channels = [self.parse_meta(c)
+                        for c in self.get('channels.list', 'channels')
+                        if c['is_member']]
+            self._channels = now, channels
 
         return channels
 
@@ -61,16 +101,14 @@ class NewsSlackBot(object):
         if self.slack_client.rtm_connect():
             LOGGER.info('StarterBot connected and running!')
             interval = timedelta(minutes=60)
-            last_news_update = datetime.now() - 2*interval
             while True:
                 now = datetime.now()
-                command, channel = self.parse_rtm_events(self.slack_client.rtm_read())
-                if command and channel:
+                command, channel_id = self.parse_rtm_events(self.slack_client.rtm_read())
+                if command and channel_id:
                     # Respond to messages.
-                    self.handle_command(command, channel)
-                elif now - last_news_update > interval:
-                    # Send news updates.
-                    last_news_update = now
+                    self.handle_command(command, channel_id)
+                else:
+                    # Try to send news updates.
                     self.send_news()
 
                 sleep(1)
@@ -86,15 +124,18 @@ class NewsSlackBot(object):
         at_bot = self.bot['at']
         for evt in events:
             LOGGER.debug(evt)
-            channel, text = evt.get('channel'), evt.get('text')
+            channel_id, text = evt.get('channel'), evt.get('text')
+            if 'purpose' in evt:
+                self.update_purpose(self.meta_by_channel_id[channel_id],
+                                    evt['purpose'])
             if evt.get('user') == self.bot['id'] or not text or evt['type'] != 'message':
                 continue
             elif at_bot in text \
-                    or channel not in map(itemgetter('id'), self.channels):
+                    or channel_id not in map(itemgetter('id'), self.channels):
                 # Handle command only if @mention or direct channel (IM).
                 tokens = filter(None, (t.strip() for t in text.split(at_bot)))
                 # return text, whitespace and @mention removed
-                return ' '.join(t.lower() for t in tokens), channel
+                return ' '.join(t.lower() for t in tokens), channel_id
         return None, None
 
     def handle_command(self, cmd, channel):
@@ -119,11 +160,20 @@ class NewsSlackBot(object):
                     yield module.NewsClient
 
     def send_news(self):
+        now = datetime.now()
         for client_cls in self.get_client_classes():
             client = client_cls(self.config)
             for channel in self.channels:
-                for article in client.fetch(topic=channel['topic']['value']
-                                            or channel['purpose']['value']):
+                meta = self.meta_by_channel_id[channel['id']]
+                last_update = meta['last_update']
+                if last_update is None \
+                        or last_update < now - timedelta(minutes=meta['frequency']):
+                    meta['last_update'] = now
+                else:
+                    continue
+                for article in client.fetch(topic=' OR '.join(meta['topic']),
+                                            limit=meta['limit'],
+                                            lang=meta['language']):
                     self.slack_client.api_call('chat.postMessage',
                                                channel=channel['id'],
                                                text=article,

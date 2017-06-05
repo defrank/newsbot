@@ -26,7 +26,7 @@ class NewsClient(BaseNewsClient):
         except tweepy.TweepError:
             raise self.APIError
 
-    def _fetch(self, topic, limit):
-        for text in map(attrgetter('text'), self.api.search(topic)):
+    def _fetch(self, topic, limit, lang):
+        for text in map(attrgetter('text'), self.api.search(topic, lang=lang)):
             LOGGER.debug(text)
             yield text
