@@ -17,7 +17,13 @@ CLIENTS_PKG = 'newsclients'
 
 
 class NewsSlackBot(object):
+    """
+    News Slackbot uses extensible news clients to fetch news articles
+    from different sources.
 
+    * News topic is determined by a channel's topic or purpose.
+
+    """
     def __init__(self, secrets_yaml='secrets.yml'):
         with open(secrets_yaml, 'rb') as secrets_file:
             self.config = config = yaml.load(secrets_file)
