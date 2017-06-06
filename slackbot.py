@@ -104,9 +104,7 @@ class NewsSlackBot(object):
     def loop_forever(self):
         if self.slack_client.rtm_connect():
             LOGGER.info('StarterBot connected and running!')
-            interval = timedelta(minutes=60)
             while True:
-                now = datetime.now()
                 command, channel_id = self.parse_rtm_events(self.slack_client.rtm_read())
                 if command and channel_id:
                     # Respond to messages.
