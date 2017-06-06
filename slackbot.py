@@ -13,6 +13,8 @@ from slackclient import SlackClient
 
 LOGGER = logging.getLogger(__name__)
 
+CLIENTS_PKG = 'newsclients'
+
 
 class NewsSlackBot(object):
 
@@ -39,6 +41,8 @@ class NewsSlackBot(object):
             users = [u for u in users_list.get('members') if 'name' in u]
             bot['id'] = next(u.get('id') for u in users if u['name'] == bot['name'])
         bot['at'] = '<@{id}>'.format(id=bot['id'])
+
+        self._clients = None
 
         self.meta_by_channel_id = defaultdict(lambda: defaultdict(lambda: None))
         self._channels = None, None
@@ -146,23 +150,26 @@ class NewsSlackBot(object):
                                    text=response,
                                    as_user=True)
 
-    @staticmethod
-    def get_client_classes(pkg='newsclients'):
+    @property
+    def clients(self):
         """
         Yield all of the NewsClients existing in non-private modules of the
         given package.
 
         """
-        for _, name, is_pkg in iter_modules([pkg]):
-            if not is_pkg and not name.startswith('_'):
-                module = import_module('{pkg}.{client}'.format(pkg=pkg, client=name))
-                if hasattr(module, 'NewsClient'):
-                    yield module.NewsClient
+        if not self._clients:
+            self._clients = []
+            for _, name, is_pkg in iter_modules([CLIENTS_PKG]):
+                if not is_pkg and not name.startswith('_'):
+                    module = import_module('{pkg}.{client}'.format(
+                        pkg=CLIENTS_PKG, client=name))
+                    if hasattr(module, 'NewsClient'):
+                        self._clients.append(module.NewsClient(self.config))
+        return self._clients
 
     def send_news(self):
         now = datetime.now()
-        for client_cls in self.get_client_classes():
-            client = client_cls(self.config)
+        for client in self.clients:
             for channel in self.channels:
                 meta = self.meta_by_channel_id[channel['id']]
                 last_update = meta['last_update']
